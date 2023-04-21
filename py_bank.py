@@ -1,97 +1,62 @@
+import sqlite3
+from sqlite3 import Error
 from datetime import datetime as dt
 
-
-class Company:
-    def __init__(self,
-                 id: int,
-                 name: str,
-                 vat_id: str,
-                 street_and_number: str,
-                 postal_code: str,
-                 city: str,
-                 country:str,
-                 contact_person:str) -> None:
-        self.id: int = id
-        self.name: str = name
-        self.vat_id: str = vat_id
-        self.street_and_number: str = street_and_number
-        self.postal_code: str = postal_code
-        self.city: str = city
-        self.country:str = country
-        self.contact_person: str = contact_person
+from features import (Company,Currency,
+                      BankAccount)
 
 
-class Currency:
-    def __init__(self,
-                 id: int,
-                 symbol: str,
-                 name: str) -> None:
-        self.id: int = id
-        self.symbol: str = symbol
-        self.name: str = name
-        
-    def __str__(self) -> str:
-        return f'{self.symbol}'
-
-class Transaction:
-    def __init__(self,
-                 id: int,
-                 created_at: dt,
-                 transaction_type: str,
-                 amount: float,
-                 author:str) -> None:
-        self.id: int = id
-        self.created_at: dt = created_at
-        self.transaction_type: str = transaction_type
-        self.amount: float = amount
-        self.author:str = author
-                 
-
-class BankAccount:
-    def __init__(self,
-                 id: int,
-                 account_number: str, # BA2023-04-00042
-                 account_owner: Company,
-                 currency: Currency,
-                 opening_amount: float,
-                 ) -> None:
-        
-         self.id:int = id
-         self.account_number:str = account_number
-         self.account_owner: Company = account_owner
-         self.currency: Currency = currency
-         self.opening_amount: float = opening_amount
-         self.transactions: list[Transaction] = []
-         self.add_transaction(opening_amount)
-
-    
-    def __str__(self) -> str:
-        return f'{self.account_number}- {self.opening_amount}  {self.currency}'
-    
-    def add_transaction(self, opening_amount):
-        transaction = Transaction( 1,
-                                  dt.now(),
-                                  'Otvaranje racuna',
-                                  )
-        self.transactions.append()
-        
-        
-account_number = f'BA-{dt.now().year} - {dt.now().month}-{"42".zfill(5)}'      
+#region Kreiranje bankovnog racuna
+account_number = f'BA-{dt.now().year}-{dt.now().month}-{"42".zfill(5)}'
 account_owner = Company(1,
-                        'Firma',
-                        '123456879985',
+                        'Firma d.o.o',
+                        '12345678987',
                         'Ulica i broj',
-                        '10090',
-                        'Zagreb',
+                        '10290',
+                        'Zapresic',
                         'Hrvatska',
-                        'Ana Anic')  
-currency = Currency(1, 'EUR', 'EURO')      
-bank_account =  BankAccount(1,
-                            account_number,
-                            account_owner,
-                            currency,
-                            10_999.99,) 
-
+                        'Pero Peric')
+currency = Currency(1, 'EUR', 'EURO')
+bank_account = BankAccount(1,
+                           account_number,
+                           account_owner,
+                           currency,
+                           10_999.99)
 
 print(bank_account)
 print(bank_account.currency)
+
+for transaction in bank_account.transactions:
+    print(transaction)
+
+
+opening_amount = bank_account.transactions[0].amount
+print(opening_amount)
+#endregion
+
+
+
+
+try:
+    # 1. Korak otvori konekciju prema bazi
+    db_connection = sqlite3.connect('db_data/dbsql.db')
+    # 2. korak kreiranje kursora za kretanje po bazi podataka
+    cursor = db_connection.cursor()
+    
+    # 3. korak pokreni sql upit
+    cursor.execute('SELECT sqlite_version() ')
+    # 3.1. korak ako je upit za dohvat podataka (read_) onda pozovemo fetchall()
+    record_set = cursor.fetchall()
+    print(record_set)
+    # 3.2  korak ako je upit za promjenu podataka (insert update i delete)
+    #db_connection.commit()
+    #4. korak zatvorimo cursor 
+    cursor.close()
+except sqlite3.Error as error:
+        print (f'Dogodila se greska u vezi baze : {error}')
+except Exception as ex:
+    print(f'Dogodila se greska: {ex}')
+finally:
+    #Finalni korak zatvaranje konekcije prema bazi
+    if db_connection:
+        db_connection.close()
